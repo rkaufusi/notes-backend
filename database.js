@@ -1,6 +1,8 @@
 const mysql = require("mysql2");
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
+
+
 const user = process.env.APP_USER;
 const password = process.env.DB_PASSWORD;
 
@@ -13,43 +15,55 @@ const pool = mysql
   })
   .promise();
 
-async function createTables() {
-  await pool.query(`CREATE TABLE if not exists users (
+pool.query(`CREATE TABLE if not exists users (
     UserID int NOT NULL PRIMARY KEY AUTO_INCREMENT,
     name varchar(255),
     password varchar(255)
 	);`);
 
-  await pool.query(`CREATE TABLE if not exists notes (
+pool.query(`CREATE TABLE if not exists notes (
     NoteID int NOT NULL PRIMARY KEY AUTO_INCREMENT,
 		noteTitle varchar(255),
     note varchar(255),
     UserID int,
-    FOREIGN KEY (UserID) REFERENCES users(UserID)
+    FOREIGN KEY (UserID) REFERENCES users(UserID) ON DELETE CASCADE
 	);`);
-}
-
-createTables();
 
 async function login(userName, pass) {
-  let [user] = await pool.query(`SELECT * FROM users WHERE username = ?`, [
+  let [[user]] = await pool.query(`SELECT * FROM users WHERE name = ?`, [
     userName,
   ]);
+	console.log(user.UserID);
+	const isValidUser = await bcrypt.compare(pass, user.password);
+	if(isValidUser){
+		let notes = getNotes(user.UserID)
+		return notes;
+	}
+	return false;
 }
-async function createUser(userName, pass) {
-  await pool.query(`INSERT INTO users (username, password) VALUES (? , ?)`, [
-    userName,
-    pass,
+
+async function createUser(name, pass) {
+	const encryptedPassword = await bcrypt.hash(pass, 10);
+  await pool.query(`INSERT INTO users (name, password) VALUES (? , ?)`, [
+    name,
+    encryptedPassword,
   ]);
+	console.log("user created");
   return "user created";
 }
 
 async function getNotes(id) {
-  let notes = pool.query(`SELECT * FROM notes WHERE id = ?`, [id]);
+  let [notes] = await pool.query(`SELECT * FROM notes WHERE userid = ?`, [id]);
   return notes;
 }
 
 async function createNote(){
+	// stuff
+}
+async function deleteUser(){
+	// stuff
+}
+async function deleteNotes(){
 	// stuff
 }
 
