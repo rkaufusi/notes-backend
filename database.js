@@ -2,7 +2,6 @@ const mysql = require("mysql2");
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
-
 const user = process.env.APP_USER;
 const password = process.env.DB_PASSWORD;
 
@@ -30,41 +29,69 @@ pool.query(`CREATE TABLE if not exists notes (
 	);`);
 
 async function login(userName, pass) {
-  let [[user]] = await pool.query(`SELECT * FROM users WHERE name = ?`, [
-    userName,
-  ]);
-	console.log(user.UserID);
-	const isValidUser = await bcrypt.compare(pass, user.password);
-	if(isValidUser){
-		let notes = getNotes(user.UserID)
-		return notes;
-	}
-	return false;
+  try {
+    let [[user]] = await pool.query(`SELECT * FROM users WHERE name = ?`, [
+      userName,
+    ]);
+    console.log(user.UserID);
+    const isValidUser = await bcrypt.compare(pass, user.password);
+    if (isValidUser) {
+      let notes = getNotes(user.UserID);
+      return notes;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+  return false;
 }
 
 async function createUser(name, pass) {
-	const encryptedPassword = await bcrypt.hash(pass, 10);
-  await pool.query(`INSERT INTO users (name, password) VALUES (? , ?)`, [
-    name,
-    encryptedPassword,
-  ]);
-	console.log("user created");
-  return "user created";
+  try {
+    const encryptedPassword = await bcrypt.hash(pass, 10);
+    await pool.query(`INSERT INTO users (name, password) VALUES (? , ?)`, [
+      name,
+      encryptedPassword,
+    ]);
+    console.log("user created");
+    return "user created";
+  } catch (error) {
+    console.log(error);
+		return "user note created";
+  }
 }
 
 async function getNotes(id) {
-  let [notes] = await pool.query(`SELECT * FROM notes WHERE userid = ?`, [id]);
-  return notes;
+	try {
+		let [notes] = await pool.query(`SELECT * FROM notes WHERE userid = ?`, [id]);
+		return notes;
+	} catch (error) {
+		console.log(error);
+	}
 }
 
-async function createNote(){
-	// stuff
+async function createNote(userID, title, note) {
+  await pool.query(
+    `INSERT INTO notes (noteTitle, note, UserID) 
+	VALUES (?, ?, ?)`,
+    [title, note, userID]
+  );
+  return;
 }
-async function deleteUser(){
-	// stuff
+async function deleteUser(name) {
+  await pool.query(`DELETE from users WHERE name = ?`, [name]);
+  return;
 }
-async function deleteNotes(){
-	// stuff
+async function deleteNote(title) {
+  await pool.query(`DELETE from notes WHERE name = noteTitle`, [title]);
+  return;
 }
 
-module.exports = { pool, login, createUser, getNotes };
+module.exports = {
+  pool,
+  login,
+  createUser,
+  getNotes,
+  deleteUser,
+  createNote,
+  deleteNote,
+};
