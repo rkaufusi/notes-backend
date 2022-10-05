@@ -9,7 +9,7 @@ router.get("/", async (req, res) => {
 
 router.post("/create", (req, res) => {
 	const {noteTitle, note, UserID} = req.body;
-	createNote(ntoeTitle, note, userID)
+	createNote(noteTitle, note, UserID)
 	res.send("note created");
 })
 
